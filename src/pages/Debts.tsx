@@ -185,3 +185,238 @@ const Debts = () => {
             <div className="text-3xl font-bold">{formatCurrency(totalMinimumPayment)}</div>
           </CardContent>
         </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Debt Breakdown</CardTitle>
+            <CardDescription>Visual distribution of your debts</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            {debts.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-gray-500">
+                No debt data to display
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Debts</CardTitle>
+          <CardDescription>Manage your debt accounts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-4">Loading...</div>
+          ) : debts.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">
+              You haven't added any debts yet. Click "Add Debt" to get started.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-4">Name</th>
+                    <th className="text-left py-2 px-4">Balance</th>
+                    <th className="text-left py-2 px-4">Interest Rate</th>
+                    <th className="text-left py-2 px-4">Min. Payment</th>
+                    <th className="text-left py-2 px-4">Due Date</th>
+                    <th className="text-right py-2 px-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {debts.map((debt) => (
+                    <tr key={debt.id} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4">{debt.name}</td>
+                      <td className="py-3 px-4">{formatCurrency(debt.balance)}</td>
+                      <td className="py-3 px-4">{debt.interest_rate}%</td>
+                      <td className="py-3 px-4">{formatCurrency(debt.minimum_payment)}</td>
+                      <td className="py-3 px-4">{debt.due_date || 'N/A'}</td>
+                      <td className="py-3 px-4 text-right">
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(debt)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteDebt(debt.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Debt Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Debt</DialogTitle>
+            <DialogDescription>
+              Enter the details of your debt account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">Name</Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="balance" className="text-right">Balance ($)</Label>
+              <Input
+                id="balance"
+                name="balance"
+                type="number"
+                value={formData.balance}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="interest_rate" className="text-right">Interest Rate (%)</Label>
+              <Input
+                id="interest_rate"
+                name="interest_rate"
+                type="number"
+                step="0.01"
+                value={formData.interest_rate}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="minimum_payment" className="text-right">Min. Payment ($)</Label>
+              <Input
+                id="minimum_payment"
+                name="minimum_payment"
+                type="number"
+                value={formData.minimum_payment}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="due_date" className="text-right">Due Date</Label>
+              <Input
+                id="due_date"
+                name="due_date"
+                type="date"
+                value={formData.due_date}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddDebt}>Add Debt</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Debt Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Debt</DialogTitle>
+            <DialogDescription>
+              Update the details of your debt account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-name" className="text-right">Name</Label>
+              <Input
+                id="edit-name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-balance" className="text-right">Balance ($)</Label>
+              <Input
+                id="edit-balance"
+                name="balance"
+                type="number"
+                value={formData.balance}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-interest_rate" className="text-right">Interest Rate (%)</Label>
+              <Input
+                id="edit-interest_rate"
+                name="interest_rate"
+                type="number"
+                step="0.01"
+                value={formData.interest_rate}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-minimum_payment" className="text-right">Min. Payment ($)</Label>
+              <Input
+                id="edit-minimum_payment"
+                name="minimum_payment"
+                type="number"
+                value={formData.minimum_payment}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-due_date" className="text-right">Due Date</Label>
+              <Input
+                id="edit-due_date"
+                name="due_date"
+                type="date"
+                value={formData.due_date}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditDebt}>Update Debt</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Debts;
