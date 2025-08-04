@@ -9,7 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Plus, Trash2, Edit } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import AppLayout from '../components/layout/AppLayout';
+import { formatCurrency } from '../lib/utils';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -101,3 +101,87 @@ const Debts = () => {
         minimum_payment: parseFloat(formData.minimum_payment),
         due_date: formData.due_date || undefined
       };
+      
+      setDebts(prev => prev.map(debt => debt.id === currentDebt.id ? updatedDebt : debt));
+      setIsEditDialogOpen(false);
+      setCurrentDebt(null);
+      resetForm();
+    } catch (error) {
+      console.error('Error updating debt:', error);
+    }
+  };
+
+  const handleDeleteDebt = async (id: string) => {
+    try {
+      // This would be replaced with actual Supabase delete
+      setDebts(prev => prev.filter(debt => debt.id !== id));
+    } catch (error) {
+      console.error('Error deleting debt:', error);
+    }
+  };
+
+  const openEditDialog = (debt: Debt) => {
+    setCurrentDebt(debt);
+    setFormData({
+      name: debt.name,
+      balance: debt.balance.toString(),
+      interest_rate: debt.interest_rate.toString(),
+      minimum_payment: debt.minimum_payment.toString(),
+      due_date: debt.due_date || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      balance: '',
+      interest_rate: '',
+      minimum_payment: '',
+      due_date: ''
+    });
+  };
+
+  // Calculate total debt
+  const totalDebt = debts.reduce((sum, debt) => sum + debt.balance, 0);
+  
+  // Calculate total minimum payment
+  const totalMinimumPayment = debts.reduce((sum, debt) => sum + debt.minimum_payment, 0);
+  
+  // Prepare data for pie chart
+  const pieData = debts.map((debt, index) => ({
+    name: debt.name,
+    value: debt.balance,
+    color: COLORS[index % COLORS.length]
+  }));
+
+  return (
+    <div className="container mx-auto p-4 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Debt Tracker</h1>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Debt
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Debt</CardTitle>
+            <CardDescription>Sum of all your debts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{formatCurrency(totalDebt)}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Minimum</CardTitle>
+            <CardDescription>Total minimum payments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{formatCurrency(totalMinimumPayment)}</div>
+          </CardContent>
+        </Card>
